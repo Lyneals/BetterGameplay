@@ -1,27 +1,23 @@
-﻿using System;
-
-using BepInEx;
+﻿using BepInEx;
 using RoR2;
-using System.Collections;
 using UnityEngine;
 
 namespace BetterGameplay
 {
     [BepInPlugin(GUID, Name, Version)]
-    public class BetterGameplayPlugin : BetterUnityPlugin.BetterUnityPlugin<BetterGameplayPlugin>
+    public class BetterGameplayPlugin : BaseUnityPlugin
     {
         public const string GUID = "com.xoxfaby.BetterGameplay";
         public const string Name = "BetterGameplay";
-        public const string Version = "1.1.2";
-        public override BaseUnityPlugin typeReference => throw new NotImplementedException();
+        public const string Version = "1.1.3";
 
-        static void MapZone_Awake(Action<MapZone> orig, MapZone self)
+        static void MapZone_Awake(On.RoR2.MapZone.orig_Awake orig, MapZone self)
         {
             orig(self);
             if (self.zoneType == MapZone.ZoneType.OutOfBounds) self.gameObject.layer = 29;
         }
 
-        static void MapZone_TryZoneStart(Action<MapZone, Collider> orig, MapZone self, Collider collider)
+        static void MapZone_TryZoneStart(On.RoR2.MapZone.orig_TryZoneStart orig, MapZone self, Collider collider)
         {
             if (self.zoneType == MapZone.ZoneType.OutOfBounds)
             {
@@ -47,7 +43,7 @@ namespace BetterGameplay
 
             orig(self, collider);
         }
-        static bool EquipmentSlot_ExecuteIfReady(Func<EquipmentSlot,bool> orig, EquipmentSlot self)
+        static bool EquipmentSlot_ExecuteIfReady(On.RoR2.EquipmentSlot.orig_ExecuteIfReady orig, EquipmentSlot self)
         {
             if ((self.inventory != null) && self.inventory.GetItemCount(ItemCatalog.FindItemIndex("AutoCastEquipment")) > 0)
             {
@@ -58,7 +54,7 @@ namespace BetterGameplay
             }
             return orig(self);
         }
-        static void Inventory_UpdateEquipment(Action<Inventory> orig, Inventory self)
+        static void Inventory_UpdateEquipment(On.RoR2.Inventory.orig_UpdateEquipment orig, Inventory self)
             {
 
                 if (self.GetItemCount(ItemCatalog.FindItemIndex("AutoCastEquipment")) > 0)
@@ -74,19 +70,20 @@ namespace BetterGameplay
                 }
                 orig(self);
             }
-        protected override void Awake()
+        public void Awake()
         {
-            base.Awake();
-            for(int i = 0; i < 32; i++)
+            Log.Init(Logger);
+            for (int i = 0; i < 32; i++)
             {
                 Physics.IgnoreLayerCollision(29, i, Physics.GetIgnoreLayerCollision(15, i)) ;
             }
             Physics.IgnoreLayerCollision(29, 8, false);
             Physics.IgnoreLayerCollision(29, 13, false);
-            BetterGameplayPlugin.Hooks.Add<RoR2.MapZone>("Awake", MapZone_Awake);
-            BetterGameplayPlugin.Hooks.Add<RoR2.MapZone, Collider>("TryZoneStart", MapZone_TryZoneStart);
-            BetterGameplayPlugin.Hooks.Add<RoR2.EquipmentSlot, bool>( "ExecuteIfReady", EquipmentSlot_ExecuteIfReady);
-            BetterGameplayPlugin.Hooks.Add<RoR2.Inventory>( "UpdateEquipment", Inventory_UpdateEquipment);
+
+            On.RoR2.MapZone.Awake += MapZone_Awake;
+            On.RoR2.MapZone.TryZoneStart += MapZone_TryZoneStart;
+            On.RoR2.EquipmentSlot.ExecuteIfReady += EquipmentSlot_ExecuteIfReady;
+            On.RoR2.Inventory.UpdateEquipment += Inventory_UpdateEquipment;
         }
     }
 }
